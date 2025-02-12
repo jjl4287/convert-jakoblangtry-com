@@ -1,0 +1,12 @@
+{
+  "name": "convert-jakoblangtry-com",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "start:frontend": "npm --prefix frontend start",
+    "start:backend": "npm --prefix backend start"
+  }
+} 

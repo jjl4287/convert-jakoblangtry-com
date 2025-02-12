@@ -1,0 +1,42 @@
+# .gcloudignore
+
+# Include all files by default
+!**
+
+# Exclude node modules everywhere
+**/node_modules/
+
+# Exclude version control directories
+.git/
+.gitignore
+
+# Exclude local environment files
+.env
+**/.env
+
+# Exclude logs and temporary files
+*.log
+**/npm-debug.log
+**/dist
+**/build
+**/.DS_Store
+
+# Exclude coverage directories
+coverage/
+
+# Exclude package-lock files
+backend/package-lock.json
+frontend/package-lock.json
+
+# Exclude test directories
+frontend/tests/
+backend/tests/
+
+# Exclude IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporarily exclude LinkConverter for troubleshooting
+# frontend/src/components/LinkConverter.tsx 

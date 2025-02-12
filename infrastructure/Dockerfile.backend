@@ -1,0 +1,32 @@
+FROM node:18-alpine as builder
+ARG NODE_ENV=development
+WORKDIR /app
+
+# Copy dependency files and install dependencies
+COPY backend/package.json backend/tsconfig.json ./
+RUN npm install && \
+    npm install -g typescript
+
+# Copy source code and build for production
+COPY backend/src ./src
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine as prod
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/dist ./dist
+RUN npm install --production
+EXPOSE 3000
+CMD ["node", "dist/app.js"]
+
+# Development stage
+FROM node:18-alpine as dev
+WORKDIR /app
+ENV NODE_ENV=development
+COPY backend/package.json backend/tsconfig.json ./
+RUN npm install
+COPY backend/src ./src
+EXPOSE 3000
+CMD ["npm", "run", "dev"] 

@@ -1,0 +1,90 @@
+# cloudbuild.yaml
+
+steps:
+  # Build the frontend Docker image for production using the custom Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', 
+            '-t', 'gcr.io/$PROJECT_ID/frontend', 
+            '-f', './infrastructure/Dockerfile.frontend', 
+            '--target', 'prod', 
+            '--build-arg', 'APP_DIR=frontend', 
+            '--build-arg', 'NODE_ENV=production', 
+            '--progress=plain',
+            './' ]
+
+  # Build the backend Docker image for production using the custom Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', 
+            '-t', 'gcr.io/$PROJECT_ID/backend', 
+            '-f', './infrastructure/Dockerfile.backend', 
+            '--target', 'prod',
+            '--build-arg', 'NODE_ENV=production',
+            './']
+
+  # Push the frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', 'gcr.io/$PROJECT_ID/frontend' ]
+
+  # Push the backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', 'gcr.io/$PROJECT_ID/backend' ]
+
+  # Deploy the frontend to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - gcloud
+      - run
+      - deploy
+      - frontend
+      - --image
+      - gcr.io/$PROJECT_ID/frontend
+      - --region
+      - us-central1
+      - --platform
+      - managed
+      - --allow-unauthenticated
+      - --port
+      - '8080'
+      - --ingress
+      - all
+      - --min-instances
+      - '1'
+
+  # Deploy the backend to Cloud Run with conditional secret injection
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+          if [ "$_ENV" = "prod" ]; then
+            echo "Deploying backend in production mode with secrets";
+            gcloud run deploy backend \
+              --image gcr.io/$PROJECT_ID/backend \
+              --region us-central1 \
+              --platform managed \
+              --update-secrets SPOTIFY_CLIENT_ID=spotify-client-id:latest,SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest \
+              --set-env-vars NODE_ENV=production \
+              --allow-unauthenticated \
+              --ingress all \
+              --min-instances 1;
+          else
+            echo "Deploying backend in development mode without secrets";
+            gcloud run deploy backend \
+              --image gcr.io/$PROJECT_ID/backend \
+              --region us-central1 \
+              --platform managed \
+              --set-env-vars NODE_ENV=production \
+              --allow-unauthenticated \
+              --ingress all \
+              --min-instances 1;
+          fi
+
+images:
+  - gcr.io/$PROJECT_ID/frontend
+  - gcr.io/$PROJECT_ID/backend
+
+substitutions:
+  _ENV: "dev"
+
+options:
+  logging: CLOUD_LOGGING_ONLY 

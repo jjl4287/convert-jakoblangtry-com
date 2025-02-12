@@ -21,19 +21,12 @@ COPY ${APP_DIR}/postcss.config.js ./postcss.config.js
 RUN npm install && \
     npm install -g react-scripts
 
-# In production, ensure no .env files are copied
-RUN if [ "$NODE_ENV" = "production" ]; then \
-      echo "*.env" > .dockerignore; \
-    fi
-
 # Copy source and public files
 COPY ${APP_DIR}/src ./src
 COPY ${APP_DIR}/public ./public
 
-# In development, copy environment files
-RUN if [ "$NODE_ENV" != "production" ]; then \
-      cp -f ${APP_DIR}/.env* ./ 2>/dev/null || true; \
-    fi
+# Copy the appropriate .env file based on NODE_ENV
+COPY ${APP_DIR}/.env.${NODE_ENV} ./.env
 
 # Debug: Show what files we have
 RUN echo "Contents of /app:" && \

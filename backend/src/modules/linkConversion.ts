@@ -114,16 +114,15 @@ export function convertAppleMusicLinkToSpotify(appleMusicLink: string): AppleMus
  * @param spotifyLink - The original Spotify link.
  * @returns The converted metadata in Apple Music format.
  */
-export function convertSpotifyLinkToAppleMusic(spotifyLink: string): AppleMusicMetadata {
-  const { type, id } = parseSpotifyLink(spotifyLink);
-  // Dummy conversion – in a real implementation this would map
-  // the Spotify ID to an Apple Music ID via API calls
-  return {
-    type,
-    id,
-    region: "us",
-    path: ["us", type, id]
-  };
+export function convertSpotifyLinkToAppleMusic(spotifyLink: string): SpotifyMetadata {
+  const metadata = parseSpotifyLink(spotifyLink);
+  
+  // Validate the content type
+  if (!['track', 'album', 'artist'].includes(metadata.type)) {
+    throw new Error(`Unsupported content type: ${metadata.type}`);
+  }
+  
+  return metadata;
 }
 
 /**

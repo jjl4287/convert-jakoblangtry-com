@@ -116,6 +116,10 @@ export const LinkConverter: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyCopySuccess, setHistoryCopySuccess] = useState<{ [key: number]: boolean }>({});
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [isHoverable] = useState(() => {
+    // Check if the device supports hover
+    return window.matchMedia('(hover: hover)').matches;
+  });
 
   // Load history from cookies on component mount
   useEffect(() => {
@@ -241,7 +245,7 @@ export const LinkConverter: React.FC = () => {
     if (!metadata) return null;
 
     return (
-      <div className="flex items-stretch gap-8">
+      <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-8">
         {metadata.artworkUrl && (
           <motion.img
             initial={{ opacity: 0, scale: 0.8 }}
@@ -249,7 +253,7 @@ export const LinkConverter: React.FC = () => {
             transition={{ delay: 0.2 }}
             src={metadata.artworkUrl}
             alt={metadata.type === 'artist' ? 'Artist photo' : 'Album artwork'}
-            className={`w-64 h-64 object-cover shadow-2xl flex-shrink-0 ${
+            className={`w-40 h-40 sm:w-48 sm:h-48 md:w-64 md:h-64 object-cover shadow-2xl flex-shrink-0 ${
               metadata.type === 'artist' ? 'rounded-full' : 'rounded-lg'
             }`}
           />
@@ -259,7 +263,7 @@ export const LinkConverter: React.FC = () => {
             <motion.h2
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-3xl font-bold text-white mb-6"
+              className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center md:text-left"
             >
               {metadata.title}
             </motion.h2>
@@ -272,20 +276,20 @@ export const LinkConverter: React.FC = () => {
               {metadata.type !== 'artist' ? (
                 <>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500 text-lg">Artist:</span>
-                    <span className="text-gray-200 text-lg">{metadata.artist}</span>
+                    <span className="text-gray-500 text-base sm:text-lg">Artist:</span>
+                    <span className="text-gray-200 text-base sm:text-lg">{metadata.artist}</span>
                   </div>
                   {metadata.album && (
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 text-lg">Album:</span>
-                      <span className="text-gray-200 text-lg">{metadata.album}</span>
+                      <span className="text-gray-500 text-base sm:text-lg">Album:</span>
+                      <span className="text-gray-200 text-base sm:text-lg">{metadata.album}</span>
                     </div>
                   )}
                 </>
               ) : metadata.genres && metadata.genres.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-500 text-lg">Genres:</span>
-                  <span className="text-gray-200 text-lg">{metadata.genres.join(', ')}</span>
+                  <span className="text-gray-500 text-base sm:text-lg">Genres:</span>
+                  <span className="text-gray-200 text-base sm:text-lg">{metadata.genres.join(', ')}</span>
                 </div>
               )}
             </motion.div>
@@ -294,13 +298,13 @@ export const LinkConverter: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="flex items-center justify-between mt-4"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-0 mt-4"
           >
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="flex items-center gap-4"
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4"
             >
               <span className="text-sm text-gray-400">
                 Match Confidence: {result?.confidence ?? 0}%
@@ -315,10 +319,12 @@ export const LinkConverter: React.FC = () => {
                 />
               </div>
             </motion.div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
               <motion.button
                 onClick={() => handleCopyLink(metadata.url)}
-                className="px-4 py-2 text-gray-300 hover:text-white transition-colors duration-300"
+                className={`px-4 py-2 text-gray-300 hover:text-white transition-colors duration-300 ${
+                  isHoverable ? 'hover:scale-102 active:scale-98' : ''
+                }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -328,7 +334,9 @@ export const LinkConverter: React.FC = () => {
                 href={metadata.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors duration-300`}
+                className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors duration-300 ${
+                  isHoverable ? 'hover:scale-102 active:scale-98' : ''
+                }`}
                 style={{ backgroundColor: metadata.buttonColor }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -360,7 +368,7 @@ export const LinkConverter: React.FC = () => {
       switch (metadata.type) {
         case 'track':
           return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {metadata.album && (
                 <div>
                   <p className="text-gray-500 text-sm">Album</p>
@@ -426,7 +434,7 @@ export const LinkConverter: React.FC = () => {
 
         case 'album':
           return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {metadata.releaseDate && (
                 <div>
                   <p className="text-gray-500 text-sm">Release Date</p>
@@ -466,7 +474,7 @@ export const LinkConverter: React.FC = () => {
 
         case 'artist':
           return (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {metadata.genres && metadata.genres.length > 0 && (
                 <div className="col-span-2">
                   <p className="text-gray-500 text-sm">Genres</p>
@@ -504,72 +512,74 @@ export const LinkConverter: React.FC = () => {
           isExpanded ? 'shadow-xl' : ''
         }`}
       >
-        <motion.div layout className="flex flex-col gap-4">
-          <motion.div layout className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {metadata.icon}
-              <div>
-                <motion.p layout className="text-white font-medium">
-                  {metadata.title}
-                </motion.p>
-                <motion.p layout className="text-gray-400 text-sm">
-                  {metadata.artist}
-                </motion.p>
-              </div>
+        <motion.div layout className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
+          <div className="flex items-center gap-4">
+            {metadata.icon}
+            <div>
+              <motion.p layout className="text-white font-medium">
+                {metadata.title}
+              </motion.p>
+              <motion.p layout className="text-gray-400 text-sm">
+                {metadata.artist}
+              </motion.p>
             </div>
-            <div className="flex items-center gap-3">
-              <motion.button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCopyLink(metadata.url, item.timestamp);
-                }}
-                className="text-gray-400 hover:text-white transition-colors duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {historyCopySuccess[item.timestamp] ? "Copied!" : "Copy"}
-              </motion.button>
-              <motion.a
-                href={metadata.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-[#9d8cff] hover:text-[#8a77ff] transition-colors duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Open
-              </motion.a>
-            </div>
-          </motion.div>
-
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4 border-t border-gray-700/50">
-                  {renderExpandedContent()}
-                  {metadata.artworkUrl && (
-                    <div className="mt-4">
-                      <motion.img
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        src={metadata.artworkUrl}
-                        alt="Album artwork"
-                        className="w-32 h-32 object-cover rounded-lg shadow-lg"
-                      />
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <motion.button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyLink(metadata.url, item.timestamp);
+              }}
+              className={`text-gray-400 hover:text-white transition-colors duration-300 ${
+                isHoverable ? 'hover:scale-102 active:scale-98' : ''
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {historyCopySuccess[item.timestamp] ? "Copied!" : "Copy"}
+            </motion.button>
+            <motion.a
+              href={metadata.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className={`text-[#9d8cff] hover:text-[#8a77ff] transition-colors duration-300 ${
+                isHoverable ? 'hover:scale-102 active:scale-98' : ''
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Open
+            </motion.a>
+          </div>
         </motion.div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="pt-4 border-t border-gray-700/50">
+                {renderExpandedContent()}
+                {metadata.artworkUrl && (
+                  <div className="mt-4">
+                    <motion.img
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      src={metadata.artworkUrl}
+                      alt="Album artwork"
+                      className="w-32 h-32 object-cover rounded-lg shadow-lg"
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   };
@@ -577,11 +587,11 @@ export const LinkConverter: React.FC = () => {
   return (
     <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-[#121212]">
-        <div className="max-w-6xl mx-auto p-6 pt-12">
+        <div className="max-w-6xl mx-auto p-4 md:p-6 pt-8 md:pt-12">
           <motion.h1 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl font-bold text-center mb-4 text-white"
+            className="text-4xl md:text-5xl font-bold text-center mb-4 text-white"
           >
             {getHeaderText()}
           </motion.h1>
@@ -590,35 +600,35 @@ export const LinkConverter: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-center text-gray-400 mb-12"
+            className="text-center text-gray-400 mb-8 md:mb-12"
           >
             Transform your music links instantly
           </motion.p>
 
           <motion.form 
             onSubmit={handleSubmit}
-            className="mb-8 space-y-4"
+            className="mb-8 space-y-4 w-full px-4 sm:px-6 md:px-0"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="flex gap-2 items-stretch">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch">
               <input
                 type="url"
                 value={inputLink}
                 onChange={(e) => setInputLink(e.target.value)}
                 placeholder="Paste Apple Music or Spotify link here"
-                className="flex-1 px-6 py-4 rounded-xl bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-lg transition-all duration-300 outline-none text-white"
+                className="flex-1 px-4 py-3 md:px-6 md:py-4 rounded-xl bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-base sm:text-lg transition-all duration-300 outline-none text-white"
                 required
               />
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`min-w-[140px] border-2 border-transparent ${
+                className={`w-full sm:w-auto sm:min-w-[140px] border-2 border-transparent ${
                   linkType === "apple" ? "bg-[#1DB954] hover:bg-[#1aa34a]" : 
                   linkType === "spotify" ? "bg-[#fa586a] hover:bg-[#f94d60]" : 
                   "bg-[#4a5568] hover:bg-[#2d3748]"
-                } text-white px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors duration-300 flex items-center gap-2 justify-center`}
+                } text-white text-sm md:text-base px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors duration-300 flex items-center gap-2 justify-center`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -654,7 +664,7 @@ export const LinkConverter: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-4 rounded-xl mb-8"
+                className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 sm:px-6 py-3 sm:py-4 rounded-xl mb-8 mx-4 sm:mx-6 md:mx-0 text-sm sm:text-base"
               >
                 {error}
               </motion.div>
@@ -670,7 +680,7 @@ export const LinkConverter: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="bg-background-light rounded-xl shadow-xl p-6 mb-8 border border-gray-700/50"
+                  className="bg-background-light rounded-xl shadow-xl p-4 md:p-6 mb-8 border border-gray-700/50"
                 >
                   {renderMetadata(metadata)}
                 </motion.div>
@@ -682,7 +692,7 @@ export const LinkConverter: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-12"
+              className="mt-8 sm:mt-12 px-4 sm:px-6 md:px-0"
             >
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-white">Recent Conversions</h2>

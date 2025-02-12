@@ -248,22 +248,37 @@ export async function searchSpotifyContent(
         params: { 
           q: searchQuery,
           type: sourceMetadata.type,
-          limit: 10,  // Get more results to find best match
+          limit: 10,
           market: 'US'
         },
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
 
+      // Log the full response for debugging
+      console.log('Spotify API Response:', JSON.stringify(response.data, null, 2));
+
       const items = response.data[`${sourceMetadata.type}s`].items;
-      if (items.length === 0) continue;
+      if (items.length === 0) {
+        console.log('No results found for query:', searchQuery);
+        continue;
+      }
 
       // Find the best matching result
       const bestMatch = findBestMatch(items, sourceMetadata);
       if (bestMatch) {
-        return mapSpotifyResponse(bestMatch, sourceMetadata);
+        const result = mapSpotifyResponse(bestMatch, sourceMetadata);
+        console.log('Found best match:', JSON.stringify(result, null, 2));
+        return result;
+      } else {
+        console.log('No good matches found for query:', searchQuery);
       }
     } catch (error: any) {
-      console.error('Spotify search error:', error.message);
+      console.error('Spotify search error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        query: searchQuery
+      });
       lastError = error;
     }
   }

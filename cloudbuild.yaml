@@ -50,41 +50,32 @@ steps:
       - --min-instances
       - '1'
 
-  # Deploy the backend to Cloud Run with conditional secret injection
+  # Deploy the backend to Cloud Run with secrets
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: bash
     args:
-      - -c
-      - |
-          if [ "$_ENV" = "prod" ]; then
-            echo "Deploying backend in production mode with secrets";
-            gcloud run deploy backend \
-              --image gcr.io/$PROJECT_ID/backend \
-              --region us-central1 \
-              --platform managed \
-              --update-secrets SPOTIFY_CLIENT_ID=spotify-client-id:latest,SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest \
-              --set-env-vars NODE_ENV=production \
-              --allow-unauthenticated \
-              --ingress all \
-              --min-instances 1;
-          else
-            echo "Deploying backend in development mode without secrets";
-            gcloud run deploy backend \
-              --image gcr.io/$PROJECT_ID/backend \
-              --region us-central1 \
-              --platform managed \
-              --set-env-vars NODE_ENV=production \
-              --allow-unauthenticated \
-              --ingress all \
-              --min-instances 1;
-          fi
+      - gcloud
+      - run
+      - deploy
+      - backend
+      - --image
+      - gcr.io/$PROJECT_ID/backend
+      - --region
+      - us-central1
+      - --platform
+      - managed
+      - --update-secrets
+      - SPOTIFY_CLIENT_ID=spotify-client-id:latest,SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest,APPLE_TEAM_ID=apple-team-id:latest,APPLE_KEY_ID=apple-key-id:latest,APPLE_PRIVATE_KEY=apple-private-key:latest
+      - --set-env-vars
+      - NODE_ENV=production
+      - --allow-unauthenticated
+      - --ingress
+      - all
+      - --min-instances
+      - '1'
 
 images:
   - gcr.io/$PROJECT_ID/frontend
   - gcr.io/$PROJECT_ID/backend
-
-substitutions:
-  _ENV: "dev"
 
 options:
   logging: CLOUD_LOGGING_ONLY 

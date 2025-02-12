@@ -1,6 +1,11 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import { convertAppleMusicLinkToSpotify } from './modules/linkConversion';
+import { 
+  convertAppleMusicLinkToSpotify, 
+  convertSpotifyLinkToAppleMusic,
+  getSpotifyDetailedMetadata,
+  searchAppleMusicContent
+} from './modules/linkConversion';
 import { extractMetadata, DetailedMetadata } from './modules/metadataExtraction';
 import { searchSpotifyContent } from './modules/spotifyApi';
 import cors from 'cors';
@@ -13,53 +18,82 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());  // Enable CORS for frontend requests
 app.use(express.json());
 
-// Endpoint for link conversion (implementation to be added)
 app.get('/', (req: Request, res: Response) => {
   res.send('Backend is running');
 });
 
-interface ConversionResponse {
+interface ConversionResponseAppleToSpotify {
+  conversionDirection: "apple-to-spotify";
   appleMusicMetadata: DetailedMetadata;
   spotifyResult: {
     spotifyUrl: string;
     metadata: DetailedMetadata;
   };
-  confidence: number;  // 0-100 score of how confident we are in the match
+  confidence: number;
 }
 
-// GET /convert?appleMusicLink=<link>
-// This endpoint converts an Apple Music link to a Spotify link by:
-// 1. Parsing the Apple Music link to extract structured metadata
-// 2. Using the iTunes API to get detailed track/album/artist information
-// 3. Searching Spotify for the best matching content using the detailed metadata
+interface ConversionResponseSpotifyToApple {
+  conversionDirection: "spotify-to-apple";
+  spotifyMetadata: DetailedMetadata;
+  appleMusicResult: {
+    appleMusicUrl: string;
+    metadata: DetailedMetadata;
+  };
+  confidence: number;
+}
+
+type ConversionResponse = ConversionResponseAppleToSpotify | ConversionResponseSpotifyToApple;
+
+// GET /convert?link=<link>
+// This endpoint converts between Apple Music and Spotify links by:
+// 1. Detecting the link type
+// 2. Parsing the link to extract structured metadata
+// 3. Using the appropriate API to get detailed information
+// 4. Searching the target platform for matching content
 app.get('/convert', async (req: Request, res: Response) => {
   try {
-    const appleMusicLink = req.query.appleMusicLink;
-    if (!appleMusicLink || typeof appleMusicLink !== 'string') {
+    const link = req.query.link;
+    if (!link || typeof link !== 'string') {
       return res.status(400).json({ 
-        error: 'appleMusicLink query parameter is required and must be a string' 
+        error: 'link query parameter is required and must be a string' 
       });
     }
 
-    // Step 1: Parse the Apple Music link
-    const parsedMetadata = convertAppleMusicLinkToSpotify(appleMusicLink);
-    
-    // Step 2: Extract detailed metadata from Apple Music
-    const appleMusicMetadata = await extractMetadata(parsedMetadata);
-    
-    // Step 3: Search Spotify using the detailed metadata
-    const spotifyResult = await searchSpotifyContent(appleMusicMetadata);
-    
-    // Step 4: Calculate match confidence
-    const confidence = calculateMatchConfidence(appleMusicMetadata, spotifyResult.metadata);
-    
-    const response: ConversionResponse = {
-      appleMusicMetadata,
-      spotifyResult,
-      confidence
-    };
-
-    res.json(response);
+    if (link.includes("music.apple.com")) {
+      // Apple Music → Spotify flow
+      const parsedMetadata = convertAppleMusicLinkToSpotify(link);
+      const appleMusicMetadata = await extractMetadata(parsedMetadata);
+      const spotifyResult = await searchSpotifyContent(appleMusicMetadata);
+      const confidence = calculateMatchConfidence(appleMusicMetadata, spotifyResult.metadata);
+      
+      const response: ConversionResponseAppleToSpotify = {
+        conversionDirection: "apple-to-spotify",
+        appleMusicMetadata,
+        spotifyResult,
+        confidence
+      };
+      res.json(response);
+    }
+    else if (link.includes("open.spotify.com")) {
+      // Spotify → Apple Music flow
+      const parsedSpotify = convertSpotifyLinkToAppleMusic(link);
+      const spotifyMetadata = await getSpotifyDetailedMetadata(parsedSpotify);
+      const appleMusicResult = await searchAppleMusicContent(spotifyMetadata);
+      const confidence = calculateMatchConfidence(spotifyMetadata, appleMusicResult.metadata);
+      
+      const response: ConversionResponseSpotifyToApple = {
+        conversionDirection: "spotify-to-apple",
+        spotifyMetadata,
+        appleMusicResult,
+        confidence
+      };
+      res.json(response);
+    }
+    else {
+      res.status(400).json({ 
+        error: "Unsupported link type. Please provide an Apple Music or Spotify link." 
+      });
+    }
   } catch (error: any) {
     console.error('Conversion error:', error);
     res.status(500).json({ 
@@ -70,8 +104,8 @@ app.get('/convert', async (req: Request, res: Response) => {
 });
 
 /**
- * Calculates a confidence score (0-100) for how well the Spotify match corresponds
- * to the Apple Music source.
+ * Calculates a confidence score (0-100) for how well the source matches
+ * the target content.
  */
 function calculateMatchConfidence(
   source: DetailedMetadata, 

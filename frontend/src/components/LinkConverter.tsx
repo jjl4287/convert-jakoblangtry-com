@@ -16,12 +16,78 @@ const AnimatePresence: React.FC<ExtendedAnimatePresenceProps> = (props) => {
   return element === undefined ? <React.Fragment>{props.children}</React.Fragment> : element;
 };
 
-interface HistoryItem extends ConversionResponse {
+type HistoryItem = {
   timestamp: number;
+} & ConversionResponse;
+
+interface ConversionMetadata {
+  title: string;
+  artist: string;
+  album?: string;
+  artworkUrl?: string;
+  url: string;
+  icon: JSX.Element;
+  service: "Spotify" | "Apple Music";
 }
 
+// Type guard functions to help TypeScript narrow the types
+function isAppleToSpotify(item: ConversionResponse | HistoryItem): item is (typeof item & { conversionDirection: "apple-to-spotify" }) {
+  return item.conversionDirection === "apple-to-spotify";
+}
+
+// Helper function to get metadata based on conversion direction
+function getMetadata(item: ConversionResponse | HistoryItem): ConversionMetadata | null {
+  try {
+    if (!item) return null;
+
+    if (isAppleToSpotify(item)) {
+      const { metadata } = item.spotifyResult || {};
+      if (!metadata) return null;
+
+      return {
+        title: metadata.title || 'Unknown Title',
+        artist: metadata.artist || 'Unknown Artist',
+        album: metadata.album,
+        artworkUrl: metadata.artworkUrl,
+        url: item.spotifyResult.spotifyUrl,
+        icon: <SpotifyIcon />,
+        service: "Spotify"
+      };
+    } else {
+      const { metadata } = item.appleMusicResult || {};
+      if (!metadata) return null;
+
+      return {
+        title: metadata.title || 'Unknown Title',
+        artist: metadata.artist || 'Unknown Artist',
+        album: metadata.album,
+        artworkUrl: metadata.artworkUrl,
+        url: item.appleMusicResult.appleMusicUrl,
+        icon: <AppleIcon />,
+        service: "Apple Music"
+      };
+    }
+  } catch (error) {
+    console.error('Error extracting metadata:', error);
+    return null;
+  }
+}
+
+// SVG icons for the services
+const SpotifyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="#1DB954" viewBox="0 0 24 24" width="24" height="24">
+    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+  </svg>
+);
+
+const AppleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="#ffffff" viewBox="0 0 24 24" width="24" height="24">
+    <path d="M16.365 1.43c0 1.14-.416 2.29-1.267 3.15-.849.86-1.98 1.65-3.11 1.65-1.13 0-2.27-.79-3.12-1.65C8.08 3.72 7.668 2.57 7.668 1.43c0-.99.417-1.97 1.267-2.83 1.02-.99 2.32-.99 3.34-.99 1.02 0 2.32 0 3.34.99.85.86 1.267 1.84 1.267 2.83zM13.008 5.92c-3.714 0-5.66 2.302-5.66 2.302-.184.328-.35.656-.507.984-.154.324-.3.648-.456.972-.186.396-.35.792-.523 1.188-1.056 2.43-.78 6.07.813 8.096.546.624 1.22 1.044 1.96 1.044.788 0 1.69-.428 2.346-.428.66 0 1.492.428 2.3.43.748 0 1.41-.42 1.965-1.046 1.585-2.024 1.86-5.664.813-8.096-.153-.396-.307-.792-.466-1.188-.157-.324-.328-.648-.507-.984 0 0-1.95-2.302-5.666-2.302z"/>
+  </svg>
+);
+
 export const LinkConverter: React.FC = () => {
-  const [appleMusicLink, setAppleMusicLink] = useState('');
+  const [inputLink, setInputLink] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ConversionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +120,26 @@ export const LinkConverter: React.FC = () => {
     }
   }, [history]);
 
+  // Helper to detect link type
+  const detectLinkType = (link: string): "apple" | "spotify" | "unknown" => {
+    if (link.includes("music.apple.com")) return "apple";
+    if (link.includes("open.spotify.com")) return "spotify";
+    return "unknown";
+  };
+
+  const linkType = detectLinkType(inputLink);
+
+  const getHeaderText = () => {
+    switch (linkType) {
+      case "apple":
+        return "Convert Apple Music to Spotify";
+      case "spotify":
+        return "Convert Spotify to Apple Music";
+      default:
+        return "Music Link Converter";
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -62,7 +148,7 @@ export const LinkConverter: React.FC = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/convert?appleMusicLink=${encodeURIComponent(appleMusicLink)}`
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/convert?link=${encodeURIComponent(inputLink)}`
       );
       const data = await response.json();
 
@@ -101,6 +187,96 @@ export const LinkConverter: React.FC = () => {
     Cookies.remove('conversionHistory', { path: '/' });
   };
 
+  const renderMetadata = (metadata: ConversionMetadata | null) => {
+    if (!metadata) return null;
+
+    return (
+      <div className="flex items-start gap-8">
+        {metadata.artworkUrl && (
+          <motion.img
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            src={metadata.artworkUrl}
+            alt="Album artwork"
+            className="w-64 h-64 object-cover rounded-lg shadow-2xl"
+          />
+        )}
+        <div className="flex-1 space-y-4">
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-2xl font-bold text-white"
+          >
+            {metadata.title}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-gray-400"
+          >
+            {metadata.artist}
+          </motion.p>
+          {metadata.album && (
+            <motion.p
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-gray-400"
+            >
+              {metadata.album}
+            </motion.p>
+          )}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-4"
+          >
+            <span className="text-sm text-gray-400">
+              Match Confidence: {result?.confidence ?? 0}%
+            </span>
+            <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${result?.confidence ?? 0}%` }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="h-full bg-[#9d8cff] rounded-full"
+              />
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="flex gap-3 pt-4"
+          >
+            <motion.a
+              href={metadata.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-[#9d8cff] text-white rounded-lg hover:bg-[#8a77ff] transition-colors duration-300"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {metadata.icon}
+              <span>Open in {metadata.service}</span>
+            </motion.a>
+            <motion.button
+              onClick={() => handleCopyLink(metadata.url)}
+              className="px-4 py-2 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700/30 transition-colors duration-300"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {copySuccess ? "Copied!" : "Copy Link"}
+            </motion.button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-[#121212]">
@@ -110,7 +286,7 @@ export const LinkConverter: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl font-bold text-center mb-4 text-white"
           >
-            Convert Apple Music to Spotify
+            {getHeaderText()}
           </motion.h1>
           
           <motion.p
@@ -132,16 +308,16 @@ export const LinkConverter: React.FC = () => {
             <div className="flex gap-2 items-stretch">
               <input
                 type="url"
-                value={appleMusicLink}
-                onChange={(e) => setAppleMusicLink(e.target.value)}
-                placeholder="Paste Apple Music link here"
+                value={inputLink}
+                onChange={(e) => setInputLink(e.target.value)}
+                placeholder="Paste Apple Music or Spotify link here"
                 className="flex-1 px-6 py-4 rounded-xl bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-lg transition-all duration-300 outline-none text-white"
                 required
               />
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="min-w-[120px] border-2 border-transparent bg-[#9d8cff] text-white px-6 rounded-xl hover:bg-[#8a77ff] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors duration-300"
+                className="min-w-[140px] border-2 border-transparent bg-[#9d8cff] text-white px-6 rounded-xl hover:bg-[#8a77ff] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors duration-300 flex items-center gap-2 justify-center"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -155,27 +331,37 @@ export const LinkConverter: React.FC = () => {
                     <span>Converting...</span>
                   </div>
                 ) : (
-                  'Convert'
+                  <>
+                    {linkType === "apple" ? <SpotifyIcon /> : linkType === "spotify" ? <AppleIcon /> : null}
+                    <span>
+                      {linkType === "apple" ? "Convert to Spotify" : 
+                       linkType === "spotify" ? "Convert to Apple Music" : 
+                       "Convert"}
+                    </span>
+                  </>
                 )}
               </motion.button>
             </div>
           </motion.form>
 
-          <React.Fragment>
-            <AnimatePresence mode="sync" presenceAffectsLayout>
-              {error && (
-                <motion.div
-                  key="error"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-4 rounded-xl mb-8"
-                >
-                  {error}
-                </motion.div>
-              )}
+          <AnimatePresence mode="sync">
+            {error && (
+              <motion.div
+                key="error"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-red-500/10 border border-red-500/20 text-red-400 px-6 py-4 rounded-xl mb-8"
+              >
+                {error}
+              </motion.div>
+            )}
 
-              {result && (
+            {result && (() => {
+              const metadata = getMetadata(result);
+              if (!metadata) return null;
+
+              return (
                 <motion.div
                   key="result"
                   initial={{ opacity: 0, y: 20 }}
@@ -183,204 +369,69 @@ export const LinkConverter: React.FC = () => {
                   exit={{ opacity: 0 }}
                   className="bg-background-light rounded-xl shadow-xl p-6 mb-8 border border-gray-700/50"
                 >
-                  <div className="flex items-start gap-8">
-                    {result.spotifyResult.metadata.artworkUrl && (
-                      <motion.img
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
-                        src={result.spotifyResult.metadata.artworkUrl}
-                        alt={`${result.spotifyResult.metadata.title} artwork`}
-                        className="w-64 h-64 object-cover rounded-lg shadow-2xl"
-                      />
-                    )}
-                    <div className="flex-1 space-y-4">
-                      <motion.h2
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="text-2xl font-bold text-white"
-                      >
-                        {result.spotifyResult.metadata.title}
-                      </motion.h2>
-                      <motion.p
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-gray-400"
-                      >
-                        {result.spotifyResult.metadata.artist}
-                      </motion.p>
-                      {result.spotifyResult.metadata.album && (
-                        <motion.p
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="text-gray-400"
-                        >
-                          {result.spotifyResult.metadata.album}
-                        </motion.p>
-                      )}
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="flex items-center gap-4"
-                      >
-                        <span className="text-sm text-gray-400">
-                          Match Confidence: {result.confidence}%
-                        </span>
-                        <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${result.confidence}%` }}
-                            transition={{ delay: 0.4, duration: 0.8 }}
-                            className="h-full bg-[#9d8cff] rounded-full"
-                          />
+                  {renderMetadata(metadata)}
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
+
+          {history.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-12"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-white">Recent Conversions</h2>
+                <button
+                  onClick={clearHistory}
+                  className="text-gray-400 hover:text-white transition-colors duration-300"
+                >
+                  Clear History
+                </button>
+              </div>
+              <div className="space-y-4">
+                {history.map((item, index) => {
+                  const metadata = getMetadata(item);
+                  if (!metadata) return null;
+
+                  return (
+                    <motion.div
+                      key={item.timestamp}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="bg-background-light rounded-lg p-4 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        {metadata.icon}
+                        <div>
+                          <p className="text-white font-medium">
+                            {metadata.title}
+                          </p>
+                          <p className="text-gray-400 text-sm">
+                            {metadata.artist}
+                          </p>
                         </div>
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                        className="flex gap-3 pt-4"
-                      >
+                      </div>
+                      <div className="flex items-center gap-2">
                         <motion.a
-                          href={result.spotifyResult.spotifyUrl}
+                          href={metadata.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 bg-[#9d8cff] px-6 py-3 rounded-lg hover:bg-[#8a77ff] font-semibold transition-colors duration-300"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          className="text-[#9d8cff] hover:text-[#8a77ff] transition-colors duration-300"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
-                          Open in Spotify
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                          </svg>
+                          Open
                         </motion.a>
-                        <motion.button
-                          onClick={() => handleCopyLink(result.spotifyResult.spotifyUrl)}
-                          className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-300 font-semibold ${
-                            copySuccess 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-[#9d8cff]/20 text-[#9d8cff] hover:bg-[#9d8cff]/30'
-                          }`}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          {copySuccess ? (
-                            <>
-                              Copied!
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </>
-                          ) : (
-                            <>
-                              Copy Link
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                              </svg>
-                            </>
-                          )}
-                        </motion.button>
-                      </motion.div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </React.Fragment>
-
-          {/* History Section */}
-          <React.Fragment>
-            <AnimatePresence mode="sync" presenceAffectsLayout>
-              {history.length > 0 && (
-                <motion.div
-                  key="history"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-16"
-                >
-                  <div className="flex justify-between items-center mb-6">
-                    <motion.h2
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="text-2xl font-bold text-white"
-                    >
-                      Recent Conversions
-                    </motion.h2>
-                    <motion.button
-                      onClick={clearHistory}
-                      className="text-red-400 hover:text-red-300 font-medium transition-colors duration-300"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      Clear History
-                    </motion.button>
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-4"
-                  >
-                    {history.map((item, index) => (
-                      <motion.div
-                        key={item.timestamp}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="bg-background-light rounded-xl p-4 flex items-center gap-4 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300"
-                      >
-                        {item.spotifyResult.metadata.artworkUrl && (
-                          <img
-                            src={item.spotifyResult.metadata.artworkUrl}
-                            alt={`${item.spotifyResult.metadata.title} artwork`}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate text-white">
-                            {item.spotifyResult.metadata.title}
-                          </h3>
-                          <p className="text-gray-400 truncate">
-                            {item.spotifyResult.metadata.artist}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(item.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex gap-3">
-                          <motion.a
-                            href={item.spotifyResult.spotifyUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#9d8cff] hover:text-[#8a77ff] transition-colors duration-300"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
-                            </svg>
-                          </motion.a>
-                          <motion.button
-                            onClick={() => handleCopyLink(item.spotifyResult.spotifyUrl)}
-                            className="text-[#9d8cff] hover:text-[#8a77ff] transition-colors duration-300"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
-                          </motion.button>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </React.Fragment>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </LazyMotion>

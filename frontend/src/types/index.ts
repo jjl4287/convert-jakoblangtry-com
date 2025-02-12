@@ -1,22 +1,23 @@
 export interface DetailedMetadata {
+  type: 'track' | 'album' | 'artist';
   title: string;
   artist: string;
   album?: string;
+  isrc?: string;
   artworkUrl?: string;
-  type: 'track' | 'album' | 'artist';
   releaseDate?: string;
   genres?: string[];
   trackNumber?: number;
   totalTracks?: number;
   discNumber?: number;
   totalDiscs?: number;
-  isrc?: string;
   duration?: number;
   popularity?: number;
   previewUrl?: string;
 }
 
-export interface ConversionResponse {
+export interface ConversionResponseAppleToSpotify {
+  conversionDirection: "apple-to-spotify";
   appleMusicMetadata: DetailedMetadata;
   spotifyResult: {
     spotifyUrl: string;
@@ -24,6 +25,18 @@ export interface ConversionResponse {
   };
   confidence: number;
 }
+
+export interface ConversionResponseSpotifyToApple {
+  conversionDirection: "spotify-to-apple";
+  spotifyMetadata: DetailedMetadata;
+  appleMusicResult: {
+    appleMusicUrl: string;
+    metadata: DetailedMetadata;
+  };
+  confidence: number;
+}
+
+export type ConversionResponse = ConversionResponseAppleToSpotify | ConversionResponseSpotifyToApple;
 
 export interface ApiError {
   error: string;

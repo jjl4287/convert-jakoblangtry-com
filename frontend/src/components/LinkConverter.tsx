@@ -129,19 +129,19 @@ export const LinkConverter: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="relative">
+            <div className="flex gap-2 items-stretch">
               <input
                 type="url"
                 value={appleMusicLink}
                 onChange={(e) => setAppleMusicLink(e.target.value)}
                 placeholder="Paste Apple Music link here"
-                className="w-full px-6 py-4 rounded-xl bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-lg transition-all duration-300 outline-none text-white"
+                className="flex-1 px-6 py-4 rounded-xl bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-lg transition-all duration-300 outline-none text-white"
                 required
               />
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="absolute right-2 top-2 bg-[#9d8cff] text-white px-8 py-2 rounded-lg hover:bg-[#8a77ff] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all duration-300"
+                className="min-w-[120px] border-2 border-transparent bg-[#9d8cff] text-white px-6 rounded-xl hover:bg-[#8a77ff] disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors duration-300"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >

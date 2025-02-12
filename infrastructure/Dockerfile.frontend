@@ -17,16 +17,23 @@ COPY ${APP_DIR}/tsconfig.json ./tsconfig.json
 COPY ${APP_DIR}/tailwind.config.js ./tailwind.config.js
 COPY ${APP_DIR}/postcss.config.js ./postcss.config.js
 
-# Copy only public environment files (no secrets)
-COPY ${APP_DIR}/.env.development ./.env.development
-COPY ${APP_DIR}/.env.production ./.env.production
+# Install dependencies in builder stage
+RUN npm install && \
+    npm install -g react-scripts
 
-# Install dependencies
-RUN npm install
+# In production, ensure no .env files are copied
+RUN if [ "$NODE_ENV" = "production" ]; then \
+      echo "*.env" > .dockerignore; \
+    fi
 
 # Copy source and public files
 COPY ${APP_DIR}/src ./src
 COPY ${APP_DIR}/public ./public
+
+# In development, copy environment files
+RUN if [ "$NODE_ENV" != "production" ]; then \
+      cp -f ${APP_DIR}/.env* ./ 2>/dev/null || true; \
+    fi
 
 # Debug: Show what files we have
 RUN echo "Contents of /app:" && \
@@ -65,6 +72,9 @@ CMD ["nginx", "-g", "daemon off;"]
 # Development stage: use Node.js to run the dev server
 FROM node:18-alpine as dev
 WORKDIR /app
-COPY --from=builder /app .
+COPY --from=builder /app ./
+COPY --from=builder /usr/local/lib/node_modules/react-scripts /usr/local/lib/node_modules/react-scripts
+RUN ln -s /usr/local/lib/node_modules/react-scripts/bin/react-scripts.js /usr/local/bin/react-scripts
 EXPOSE 3001
+ENV WDS_SOCKET_PORT=0
 CMD ["npm", "start"] 

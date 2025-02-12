@@ -3,7 +3,8 @@ ARG NODE_ENV=development
 WORKDIR /app
 
 # Copy dependency files and install dependencies
-COPY backend/package.json backend/tsconfig.json ./
+COPY backend/package.json ./package.json
+COPY backend/tsconfig.json ./tsconfig.json
 RUN npm install && \
     npm install -g typescript
 
@@ -15,6 +16,8 @@ RUN npm run build
 FROM node:18-alpine as prod
 WORKDIR /app
 ENV NODE_ENV=production
+# Ensure no .env files are copied in production
+RUN echo "*.env" > .dockerignore
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 RUN npm install --production && \
@@ -26,8 +29,19 @@ CMD ["node", "dist/app.js"]
 FROM node:18-alpine as dev
 WORKDIR /app
 ENV NODE_ENV=development
-COPY backend/package.json backend/tsconfig.json ./
+
+# First copy package files and install dependencies
+COPY backend/package.json ./package.json
 RUN npm install
+
+# Then copy the rest of the backend files
 COPY backend/src ./src
+COPY backend/tsconfig.json ./tsconfig.json
+
+# Set up environment files for development
+RUN mkdir -p /app/config
+COPY backend/.env* /app/config/
+RUN cp -f /app/config/.env* ./ 2>/dev/null || true && rm -rf /app/config
+
 EXPOSE 3000
 CMD ["npm", "run", "dev"] 

@@ -49,6 +49,8 @@ steps:
       - all
       - --min-instances
       - '1'
+      - --set-env-vars
+      - NODE_ENV=production
 
   # Deploy the backend to Cloud Run with secrets
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -66,7 +68,7 @@ steps:
       - --update-secrets
       - SPOTIFY_CLIENT_ID=spotify-client-id:latest,SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest,APPLE_TEAM_ID=apple-team-id:latest,APPLE_KEY_ID=apple-key-id:latest,APPLE_PRIVATE_KEY=apple-private-key:latest
       - --set-env-vars
-      - NODE_ENV=production
+      - NODE_ENV=production,GOOGLE_CLOUD_PROJECT=$PROJECT_ID
       - --allow-unauthenticated
       - --ingress
       - all

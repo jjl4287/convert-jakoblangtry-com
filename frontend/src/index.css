@@ -15,4 +15,29 @@ body {
 /* Navbar styles */
 nav, .cursor-navbar {
   @apply bg-[#121212] border-b border-gray-800 !important;
+}
+
+/* Button styles */
+button {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Responsive button styles */
+button.responsive {
+  @apply p-2 sm:p-4 md:p-6;
+}
+
+/* Convert button specific styles */
+button.convert {
+  @apply absolute right-0 top-0 mt-2 mr-2 p-2 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75;
+}
+
+/* Icon only for smaller screens */
+button .icon-only {
+  @apply sm:hidden;
+}
+
+/* Text and icon for larger screens */
+button .text-and-icon {
+  @apply hidden sm:inline;
 } 

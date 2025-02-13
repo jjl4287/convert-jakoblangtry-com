@@ -612,48 +612,51 @@ export const LinkConverter: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 items-stretch">
-              <input
-                type="url"
-                value={inputLink}
-                onChange={(e) => setInputLink(e.target.value)}
-                placeholder="Paste Apple Music or Spotify link here"
-                className="flex-1 px-4 py-3 md:px-6 md:py-4 rounded-xl bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-base sm:text-lg transition-all duration-300 outline-none text-white"
-                required
-              />
-              <motion.button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full sm:w-auto sm:min-w-[140px] border-2 border-transparent ${
-                  linkType === "apple" ? "bg-[#1DB954] hover:bg-[#1aa34a]" : 
-                  linkType === "spotify" ? "bg-[#fa586a] hover:bg-[#f94d60]" : 
-                  "bg-[#4a5568] hover:bg-[#2d3748]"
-                } text-white text-sm md:text-base px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors duration-300 flex items-center gap-2 justify-center`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                    />
-                    <span>Converting...</span>
-                  </div>
-                ) : (
-                  <>
-                    {linkType === "apple" ? <SpotifyIcon className="text-white h-6 w-6" /> : 
-                     linkType === "spotify" ? <AppleMusicIcon className="text-white h-6 w-6" /> : 
-                     null}
-                    <span>
-                      {linkType === "apple" ? "Convert to Spotify" : 
-                       linkType === "spotify" ? "Convert to Apple Music" : 
-                       "Convert"}
-                    </span>
-                  </>
-                )}
-              </motion.button>
+            <div className="flex justify-center">
+              <div className="relative w-full max-w-6xl">
+                <input
+                  type="url"
+                  value={inputLink}
+                  onChange={(e) => setInputLink(e.target.value)}
+                  placeholder="Paste Apple Music or Spotify link here"
+                  className="w-full p-3 md:p-4 rounded-lg bg-background-light border-2 border-gray-700 focus:border-[#9d8cff] focus:ring-2 focus:ring-[#9d8cff]/20 text-base sm:text-lg transition-all duration-300 outline-none text-white"
+                  required
+                />
+                <motion.button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-transparent ${
+                    linkType === "apple" ? "bg-[#1DB954] hover:bg-[#1aa34a]" : 
+                    linkType === "spotify" ? "bg-[#fa586a] hover:bg-[#f94d60]" : 
+                    "bg-[#4a5568] hover:bg-[#2d3748]"
+                  } text-white rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-75`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ y: "-50%" }}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                      />
+                      <span className="hidden sm:inline">Converting...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {linkType === "apple" ? <SpotifyIcon className="text-white h-6 w-6" /> : 
+                       linkType === "spotify" ? <AppleMusicIcon className="text-white h-6 w-6" /> : 
+                       null}
+                      <span className="hidden sm:inline">
+                        {linkType === "apple" ? "Convert to Spotify" : 
+                         linkType === "spotify" ? "Convert to Apple Music" : 
+                         "Convert"}
+                      </span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
             </div>
           </motion.form>
 

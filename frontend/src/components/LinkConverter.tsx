@@ -334,15 +334,13 @@ export const LinkConverter: React.FC = () => {
                 href={metadata.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors duration-300 ${
-                  isHoverable ? 'hover:scale-102 active:scale-98' : ''
-                }`}
+                className={`flex items-center gap-2 p-2 text-white rounded-full shadow-lg transition-colors duration-300`}
                 style={{ backgroundColor: metadata.buttonColor }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
+                <span className="hidden lg:!inline-block">Open in</span>
                 {metadata.icon}
-                <span>Open in {metadata.service}</span>
               </motion.a>
             </div>
           </motion.div>
@@ -514,7 +512,6 @@ export const LinkConverter: React.FC = () => {
       >
         <motion.div layout className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 sm:justify-between">
           <div className="flex items-center gap-4">
-            {metadata.icon}
             <div>
               <motion.p layout className="text-white font-medium">
                 {metadata.title}
@@ -546,10 +543,10 @@ export const LinkConverter: React.FC = () => {
               className={`text-[#9d8cff] hover:text-[#8a77ff] transition-colors duration-300 ${
                 isHoverable ? 'hover:scale-102 active:scale-98' : ''
               }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              Open
+              {metadata.icon}
             </motion.a>
           </div>
         </motion.div>
@@ -644,16 +641,12 @@ export const LinkConverter: React.FC = () => {
                       <span className="hidden sm:inline">Converting...</span>
                     </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-2">
+                      <span className="hidden lg:!inline-block">Convert to</span>
                       {linkType === "apple" ? <SpotifyIcon className="text-white h-6 w-6" /> : 
                        linkType === "spotify" ? <AppleMusicIcon className="text-white h-6 w-6" /> : 
                        null}
-                      <span className="hidden sm:inline">
-                        {linkType === "apple" ? "Convert to Spotify" : 
-                         linkType === "spotify" ? "Convert to Apple Music" : 
-                         "Convert"}
-                      </span>
-                    </>
+                    </div>
                   )}
                 </motion.button>
               </div>
@@ -683,7 +676,7 @@ export const LinkConverter: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="bg-background-light rounded-xl shadow-xl p-4 md:p-6 mb-8 border border-gray-700/50"
+                  className="bg-background-light rounded-xl shadow-xl p-3 md:p-4 mb-8 border border-gray-700/50"
                 >
                   {renderMetadata(metadata)}
                 </motion.div>

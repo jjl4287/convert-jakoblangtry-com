@@ -9,10 +9,8 @@ A modern web application that converts music links between Spotify and Apple Mus
 - 🔄 Instant conversion between Spotify and Apple Music links
 - 🎵 Detailed music metadata display (title, artist, album, artwork)
 - 📊 Match confidence scoring
-- 🎨 Beautiful, responsive UI with animations
 - 💾 Local conversion history
 - 🎧 Audio preview support (when available)
-- 🌙 Dark mode interface
 - 🔍 Smart content matching algorithm
 
 ## Tech Stack
@@ -21,7 +19,6 @@ A modern web application that converts music links between Spotify and Apple Mus
 - React with TypeScript
 - Tailwind CSS for styling
 - Framer Motion for animations
-- Responsive design with mobile-first approach
 
 ### Backend
 - Node.js with Express

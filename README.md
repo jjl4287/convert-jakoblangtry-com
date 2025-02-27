@@ -1,6 +1,6 @@
 # Music Link Converter
 
-A modern web application that converts music links between Spotify and Apple Music platforms. Built with React, TypeScript, and Express.js, featuring a beautiful and responsive UI with smooth animations.
+A modern web application that converts music links between Spotify and Apple Music platforms. Built with React, TypeScript, and Express.js.
 
 ![Music Link Converter](frontend/public/preview.png)
 
